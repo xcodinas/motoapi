@@ -25,6 +25,13 @@ class VariantResource(Resource):
 recommendation_parser = reqparse.RequestParser()
 recommendation_parser.add_argument('year', type=integer())
 recommendation_parser.add_argument('model_year', type=integer())
+recommendation_parser.add_argument('displacement', type=integer())
+recommendation_parser.add_argument('top_speed', type=integer())
+recommendation_parser.add_argument('power', type=integer())
+recommendation_parser.add_argument('fuel_capacity', type=integer())
+recommendation_parser.add_argument('weight_incl._oil,_gas,_etc', type=integer())
+recommendation_parser.add_argument('valves_per_cylinder', type=integer())
+recommendation_parser.add_argument('category', type=integer())
 
 
 class AttributeHandler:
@@ -144,7 +151,8 @@ class Recommendation(Resource):
             'power',
             'fuel_capacity',
             'weight_incl._oil,_gas,_etc',
-            'valves_per_cylinder'
+            'valves_per_cylinder',
+            'category'
         ]
         categories = set()
         preference = {k: float(v) for k, v in request.args.items()}
