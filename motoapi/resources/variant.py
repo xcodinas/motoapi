@@ -5,6 +5,8 @@ from motoapi import db
 from motoapi.models import Variation, LikedVariant, DislikedVariant
 from motoapi.utils import current_user, query_with_paging, str2bool, abort
 from motoapi.fields import variant_fields, integer
+from motoapi.utils import current_user
+from sqlalchemy.sql.expression import func, select
 import re
 
 
@@ -29,17 +31,27 @@ class VariantResource(Resource):
         return [variant_fields(v) for v in query_with_paging(
             Variation.query.filter_by(fetch_state='success'))]
 
-def get_average_preferences():
-    pass
+def get_average_preferences(ids_liked):
+    handler = AttributeHandler(None, None)
+    fill_handler(handler, variations=Variation.query.filter(
+        Variation.id.in_(ids_liked)).all())
+    return handler.get_average_bikes()
 
 def tinder_recommendation():
-    if not likes:
-        return random
     ids_liked = set()
-    preferences = get_average_preferences()
-    response = recommendation_response(preferences)
+    for like in LikedVariant.query.filter_by(user_id=current_user().id):
+        ids_liked.add(like.variant_id)
     LIMIT = 5
-    return response[:LIMIT]
+    if not ids_liked:
+        variations = Variation.query.order_by(func.random()).limit(5)
+        return [variant_fields(v) for v in variations]
+    preferences = get_average_preferences(ids_liked)
+    response = recommendation_response(preferences)
+    filtered_response = []
+    for item in response:
+        if not item.id in ids_liked:
+            filtered_response.append(item)
+    return filtered_response[:LIMIT]
 
 
 
@@ -108,9 +120,19 @@ class AttributeHandler:
                 return attr, CAT_IN.index(value)
         raise ValueError('Empty')
 
+    def get_average_bikes(self):
+        response = {}
+        for attr in self.list_attributes:
+            avg = 0
+            for bike in self.bikes.values():
+                avg += bike[attr]
+            avg /= len(self.bikes)
+            response[attr] = avg
+        return response
+
     def add_attribute(self, id, attribute, value):
         attribute, value = self._parse_attribute(attribute, value)
-        if attribute not in self.list_attributes:
+        if self.list_attributes is not None and attribute not in self.list_attributes:
             return
         if attribute not in self.min_attributes:
             self.min_attributes[attribute] = value
@@ -168,7 +190,7 @@ class AttributeHandler:
         return distance_d
 
 
-def recommendation_response(preference):
+def fill_handler(handler, variations=None):
     attrs = ['year', 'model_year']
     extra_attr = [
         'displacement',
@@ -179,9 +201,9 @@ def recommendation_response(preference):
         'valves_per_cylinder',
         'category'
     ]
-    
-    handler = AttributeHandler(preference.keys(), preference)
-    for variation in Variation.query.all():
+    if variations is None:
+        variations = Variation.query.all()
+    for variation in variations:
         if not AttributeHandler.check_all_attributes(variation, attrs):
             continue
         if (variation.extra_data is None
@@ -194,6 +216,10 @@ def recommendation_response(preference):
         for attr in extra_attr:
             handler.add_attribute(
                 variation.id, attr, variation.extra_data[attr])
+
+def recommendation_response(preference):
+    handler = AttributeHandler(preference.keys(), preference)
+    fill_handler(handler)
     LIMIT = 50
     recommendations = handler.get_recommendations()[:LIMIT]
     ids = list(map(lambda x: x[0], recommendations))
@@ -222,7 +248,7 @@ class TinderSwinger(Resource):
     decorators = [jwt_required]
 
     def get(self):
-        return [variant_fields(v) for v in query_with_pagination(
+        return [variant_fields(v) for v in query_with_paging(
             Variation.query)]
 
     def post(self):
