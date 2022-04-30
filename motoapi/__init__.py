@@ -63,6 +63,7 @@ from motoapi.resources.user import (
 from motoapi.resources.variant import (
     Recommendation,
     VariantResource,
+    TinderSwinger,
     )
 
 # User
@@ -72,6 +73,7 @@ api.add_resource(MeResource, '/api/user/me')
 # Variant
 api.add_resource(VariantResource, '/api/variant')
 api.add_resource(Recommendation, '/api/variant/recommendation')
+api.add_resource(TinderSwinger, '/api/variant/swinger')
 
 from motoapi import models, routes, exceptions, utils
 assert utils

@@ -112,6 +112,13 @@ class Variation(db.Model, TimestampsMixin):
     brand_id = db.Column(db.Integer, db.ForeignKey('brand.id'),
         nullable=False)
 
+    liked_by = db.relationship('LikedVariant',
+        foreign_keys='LikedVariant.variant_id',
+        backref='variant', lazy='dynamic')
+    disliked_by = db.relationship('DislikedVariant',
+        foreign_keys='DislikedVariant.variant_id',
+        backref='variant', lazy='dynamic')
+
     def get_url(self, year=None, use_year=False):
         if year:
             return ('https://bikez.com/motorcycles/%s_%s_%s.php' % (
@@ -218,6 +225,14 @@ class User(db.Model, TimestampsMixin):
     recovery_code = db.Column(db.String)
     recovery_code_expiration = db.Column(db.DateTime)
 
+    liked_variants = db.relationship('LikedVariant',
+        foreign_keys='LikedVariant.user_id',
+        backref='user', lazy='dynamic')
+
+    disliked_variants = db.relationship('DislikedVariant',
+        foreign_keys='DislikedVariant.user_id',
+        backref='user', lazy='dynamic')
+
     @declared_attr
     def roles(cls):
         # The first arg is a class name, the backref is a column name
@@ -253,3 +268,19 @@ class Role(db.Model, TimestampsMixin):
         server_default=func.now(),
         onupdate=datetime.datetime.utcnow,
     )
+
+
+class LikedVariant(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+        nullable=False)
+    variant_id = db.Column(db.Integer, db.ForeignKey('variation.id'),
+        nullable=False)
+
+
+class DislikedVariant(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+        nullable=False)
+    variant_id = db.Column(db.Integer, db.ForeignKey('variation.id'),
+        nullable=False)
