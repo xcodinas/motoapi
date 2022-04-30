@@ -1,14 +1,20 @@
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required
 from flask import request
-from motoapi.models import Variation
-from motoapi.utils import query_with_paging, abort
+from motoapi import db
+from motoapi.models import Variation, LikedVariant, DislikedVariant
+from motoapi.utils import current_user, query_with_paging, str2bool, abort
 from motoapi.fields import variant_fields, integer
 import re
 
 
 variant_parser = reqparse.RequestParser()
 variant_parser.add_argument('variant', type=integer())
+
+tinder_parser = reqparse.RequestParser()
+tinder_parser.add_argument('variant', type=integer(), required=True)
+tinder_parser.add_argument('liked', type=str2bool)
+tinder_parser.add_argument('disliked', type=str2bool)
 
 
 class VariantResource(Resource):
@@ -210,3 +216,26 @@ class Recommendation(Resource):
     def get(self):
         args = recommendation_parser.parse_args()
         return recommendation_response({k: float(v) for k, v in request.args.items()})
+
+class TinderSwinger(Resource):
+
+    decorators = [jwt_required]
+
+    def get(self):
+        return [variant_fields(v) for v in query_with_pagination(
+            Variation.query)]
+
+    def post(self):
+        args = tinder_parser.parse_args()
+        variant = Variation.query.filter_by(id=args.variant).first()
+        if not variant:
+            return abort(400, message="Variant not found")
+        if args.liked:
+            db.session.add(LikedVariant(
+                variant=variant, user=current_user()))
+        elif args.disliked:
+            db.session.add(DislikedVariant(
+                variant=variant, user=current_user()))
+        db.session.commit()
+        return [variant_fields(v) for v in query_with_paging(
+            Variation.query)]
