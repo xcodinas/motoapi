@@ -26,6 +26,7 @@ recommendation_parser = reqparse.RequestParser()
 recommendation_parser.add_argument('year', type=integer())
 recommendation_parser.add_argument('model_year', type=integer())
 
+
 class AttributeHandler:
     def __init__(self, list_attributes, preference):
         self.list_attributes = list_attributes
@@ -33,7 +34,7 @@ class AttributeHandler:
         self.max_attributes = {}
         self.preference = preference
         self.bikes = {}
-    
+
     def _parse_attribute(self, attr, value):
         if attr in ['year', 'model_year']:
             return value
@@ -41,10 +42,11 @@ class AttributeHandler:
             return int(value.split()[0])
         if 'valves_per_cylinder' == attr:
             return int(value)
-        if attr in ['top_speed', 'fuel_capacity', 'weight_incl._oil,_gas,_etc']:
+        if attr in ['top_speed', 'fuel_capacity',
+                    'weight_incl._oil,_gas,_etc']:
             return float(value.split()[0])
         if 'power' == attr:
-            if not 'kW' in value:
+            if 'kW' not in value:
                 return float(value.split()[0])
             return float(value.split()[-1][1:])
         if 'category' == attr:
@@ -77,8 +79,10 @@ class AttributeHandler:
             self.min_attributes[attribute] = value
             self.max_attributes[attribute] = value
         else:
-            self.min_attributes[attribute] = min(self.max_attributes[attribute], value)
-            self.max_attributes[attribute] = max(self.max_attributes[attribute], value)
+            self.min_attributes[attribute] = min(
+                self.max_attributes[attribute], value)
+            self.max_attributes[attribute] = max(
+                self.max_attributes[attribute], value)
         if id not in self.bikes:
             self.bikes[id] = {}
         self.bikes[id][attribute] = value
@@ -89,14 +93,14 @@ class AttributeHandler:
             if getattr(obj, attr) is None:
                 return False
         return True
-    
+
     @staticmethod
     def check_all_index(obj, attributes):
         for attr in attributes:
             if attr not in obj or obj[attr] is None:
                 return False
         return True
-    
+
     def get_recommendations(self, limit=50):
         distance_d = []
         min_distance = 99999999
@@ -106,8 +110,9 @@ class AttributeHandler:
             for attr in self.list_attributes:
                 mx = self.max_attributes[attr]
                 mn = self.min_attributes[attr]
+
                 def clap(value):
-                    return (value - mn) / (mx - mn) 
+                    return (value - mn) / (mx - mn)
                 clap_bike = clap(bike[attr])
                 clap_preference = clap(self.preference[attr])
                 difference = abs(clap_bike - clap_preference)
@@ -115,16 +120,15 @@ class AttributeHandler:
             min_distance = min(min_distance, distance)
             max_distance = max(max_distance, distance)
             distance_d.append((bike_id, distance))
-        
+
         for i in range(len(distance_d)):
             bike_id, distance = distance_d[i]
-            distance = ((distance - min_distance) / (max_distance - min_distance)) * 100
+            distance = ((distance - min_distance) / (
+                max_distance - min_distance)) * 100
             distance_d[i] = bike_id, distance
-        
+
         distance_d.sort(key=lambda x: x[1], reverse=True)
         return distance_d[limit:]
-
-
 
 
 class Recommendation(Resource):
@@ -143,22 +147,27 @@ class Recommendation(Resource):
             'valves_per_cylinder'
         ]
         categories = set()
-        preference = {k:float(v) for k,v in request.args.items()}
+        preference = {k: float(v) for k, v in request.args.items()}
         handler = AttributeHandler(request.args.keys(), preference)
         for variation in Variation.query.all():
             if not AttributeHandler.check_all_attributes(variation, attrs):
                 continue
-            if variation.extra_data is None or not AttributeHandler.check_all_index(variation.extra_data, extra_attr):
+            if (variation.extra_data is None
+                    or not AttributeHandler.check_all_index(
+                        variation.extra_data, extra_attr)):
                 continue
             for attr in attrs:
-                handler.add_attribute(variation.id, attr, getattr(variation, attr))
+                handler.add_attribute(
+                    variation.id, attr, getattr(variation, attr))
             for attr in extra_attr:
-                handler.add_attribute(variation.id, attr, variation.extra_data[attr])
+                handler.add_attribute(
+                    variation.id, attr, variation.extra_data[attr])
         recommendations = handler.get_recommendations()
         ids = list(map(lambda x: x[0], recommendations))
-        recommendations = {k:v for k,v in recommendations}
-        recommendations_obj = Variation.query.filter(Variation.id.in_(ids)).all()
-        
+        recommendations = {k: v for k, v in recommendations}
+        recommendations_obj = Variation.query.filter(
+            Variation.id.in_(ids)).all()
+
         response = []
         for obj in recommendations_obj:
             fields = variant_fields(obj)
