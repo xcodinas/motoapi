@@ -23,6 +23,21 @@ class VariantResource(Resource):
         return [variant_fields(v) for v in query_with_paging(
             Variation.query.filter_by(fetch_state='success'))]
 
+def get_average_preferences():
+    pass
+
+def tinder_recommendation():
+    if not likes:
+        return random
+    ids_liked = set()
+    preferences = get_average_preferences()
+    response = recommendation_response(preferences)
+    LIMIT = 5
+    return response[:LIMIT]
+
+
+
+
 recommendation_parser = reqparse.RequestParser()
 recommendation_parser.add_argument('year', type=integer())
 recommendation_parser.add_argument('model_year', type=integer())
@@ -117,7 +132,7 @@ class AttributeHandler:
                 return False
         return True
 
-    def get_recommendations(self, limit=50):
+    def get_recommendations(self):
         distance_d = []
         min_distance = 99999999
         max_distance = 0
@@ -144,8 +159,49 @@ class AttributeHandler:
             distance_d[i] = bike_id, distance
 
         distance_d.sort(key=lambda x: x[1], reverse=True)
-        return distance_d[:limit]
+        return distance_d
 
+
+def recommendation_response(preference):
+    attrs = ['year', 'model_year']
+    extra_attr = [
+        'displacement',
+        'top_speed',
+        'power',
+        'fuel_capacity',
+        'weight_incl._oil,_gas,_etc',
+        'valves_per_cylinder',
+        'category'
+    ]
+    
+    handler = AttributeHandler(preference.keys(), preference)
+    for variation in Variation.query.all():
+        if not AttributeHandler.check_all_attributes(variation, attrs):
+            continue
+        if (variation.extra_data is None
+                or not AttributeHandler.check_all_index(
+                    variation.extra_data, extra_attr)):
+            continue
+        for attr in attrs:
+            handler.add_attribute(
+                variation.id, attr, getattr(variation, attr))
+        for attr in extra_attr:
+            handler.add_attribute(
+                variation.id, attr, variation.extra_data[attr])
+    LIMIT = 50
+    recommendations = handler.get_recommendations()[:LIMIT]
+    ids = list(map(lambda x: x[0], recommendations))
+    recommendations = {k: v for k, v in recommendations}
+    recommendations_obj = Variation.query.filter(
+        Variation.id.in_(ids)).all()
+
+    response = []
+    for obj in recommendations_obj:
+        fields = variant_fields(obj)
+        fields['matching'] = recommendations[obj.id]
+        response.append(fields)
+
+    return response
 
 class Recommendation(Resource):
 
@@ -153,42 +209,4 @@ class Recommendation(Resource):
 
     def get(self):
         args = recommendation_parser.parse_args()
-        attrs = ['year', 'model_year']
-        extra_attr = [
-            'displacement',
-            'top_speed',
-            'power',
-            'fuel_capacity',
-            'weight_incl._oil,_gas,_etc',
-            'valves_per_cylinder',
-            'category'
-        ]
-        
-        preference = {k: float(v) for k, v in request.args.items()}
-        handler = AttributeHandler(request.args.keys(), preference)
-        for variation in Variation.query.all():
-            if not AttributeHandler.check_all_attributes(variation, attrs):
-                continue
-            if (variation.extra_data is None
-                    or not AttributeHandler.check_all_index(
-                        variation.extra_data, extra_attr)):
-                continue
-            for attr in attrs:
-                handler.add_attribute(
-                    variation.id, attr, getattr(variation, attr))
-            for attr in extra_attr:
-                handler.add_attribute(
-                    variation.id, attr, variation.extra_data[attr])
-        recommendations = handler.get_recommendations()
-        ids = list(map(lambda x: x[0], recommendations))
-        recommendations = {k: v for k, v in recommendations}
-        recommendations_obj = Variation.query.filter(
-            Variation.id.in_(ids)).all()
-
-        response = []
-        for obj in recommendations_obj:
-            fields = variant_fields(obj)
-            fields['matching'] = recommendations[obj.id]
-            response.append(fields)
-
-        return response
+        return recommendation_response({k: float(v) for k, v in request.args.items()})
