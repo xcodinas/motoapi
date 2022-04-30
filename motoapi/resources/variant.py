@@ -4,6 +4,7 @@ from flask import request
 from motoapi.models import Variation
 from motoapi.utils import query_with_paging, abort
 from motoapi.fields import variant_fields, integer
+import re
 
 
 variant_parser = reqparse.RequestParser()
@@ -29,7 +30,7 @@ recommendation_parser.add_argument('displacement', type=integer())
 recommendation_parser.add_argument('top_speed', type=integer())
 recommendation_parser.add_argument('power', type=integer())
 recommendation_parser.add_argument('fuel_capacity', type=integer())
-recommendation_parser.add_argument('weight_incl._oil,_gas,_etc', type=integer())
+recommendation_parser.add_argument('weight', type=integer())
 recommendation_parser.add_argument('valves_per_cylinder', type=integer())
 recommendation_parser.add_argument('category', type=integer())
 
@@ -43,19 +44,21 @@ class AttributeHandler:
         self.bikes = {}
 
     def _parse_attribute(self, attr, value):
+        if attr == 'weight_incl._oil,_gas,_etc':
+            attr = 'weight'
         if attr in ['year', 'model_year']:
-            return value
+            return attr, value
         if 'displacement' == attr:
-            return int(value.split()[0])
+            return attr, float(value.split()[0])
         if 'valves_per_cylinder' == attr:
-            return int(value)
-        if attr in ['top_speed', 'fuel_capacity',
-                    'weight_incl._oil,_gas,_etc']:
-            return float(value.split()[0])
+            return attr, int(value)
+        if attr in ['top_speed', 'fuel_capacity', 'weight']:
+            return attr, float(value.split()[0])
         if 'power' == attr:
             if 'kW' not in value:
-                return float(value.split()[0])
-            return float(value.split()[-1][1:])
+                return attr, float(value.split()[0])
+            value = float(re.search('(\d+\.\d+)\s*kW', value).group(1))
+            return attr, value
         if 'category' == attr:
             CAT_IN = [
                 "Unspecified category",
@@ -79,15 +82,15 @@ class AttributeHandler:
                 value = int(value)
                 assert 0 <= value
                 assert value < len(CAT_IN)
-                return value
+                return attr, value
             except:
-                return CAT_IN.index(value)
+                return attr, CAT_IN.index(value)
         raise ValueError('Empty')
 
     def add_attribute(self, id, attribute, value):
+        attribute, value = self._parse_attribute(attribute, value)
         if attribute not in self.list_attributes:
             return
-        value = self._parse_attribute(attribute, value)
         if attribute not in self.min_attributes:
             self.min_attributes[attribute] = value
             self.max_attributes[attribute] = value
