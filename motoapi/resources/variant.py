@@ -248,8 +248,7 @@ class TinderSwinger(Resource):
     decorators = [jwt_required]
 
     def get(self):
-        return [variant_fields(v) for v in query_with_paging(
-            Variation.query)]
+        return tinder_recommendation()
 
     def post(self):
         args = tinder_parser.parse_args()
@@ -263,5 +262,4 @@ class TinderSwinger(Resource):
             db.session.add(DislikedVariant(
                 variant=variant, user=current_user()))
         db.session.commit()
-        return [variant_fields(v) for v in query_with_paging(
-            Variation.query)]
+        return tinder_recommendation()
