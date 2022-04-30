@@ -122,7 +122,7 @@ class AttributeHandler:
 
     def get_average_bikes(self):
         response = {}
-        for attr in self.list_attributes:
+        for attr in self.min_attributes:
             avg = 0
             for bike in self.bikes.values():
                 avg += bike[attr]
