@@ -75,7 +75,13 @@ class AttributeHandler:
                 "Speedway",
                 "Prototype / concept model"
             ]
-            return CAT_IN.index(value)
+            try:
+                value = int(value)
+                assert 0 <= value
+                assert value < len(CAT_IN)
+                return value
+            except:
+                return CAT_IN.index(value)
         raise ValueError('Empty')
 
     def add_attribute(self, id, attribute, value):
@@ -154,7 +160,7 @@ class Recommendation(Resource):
             'valves_per_cylinder',
             'category'
         ]
-        categories = set()
+        
         preference = {k: float(v) for k, v in request.args.items()}
         handler = AttributeHandler(request.args.keys(), preference)
         for variation in Variation.query.all():
