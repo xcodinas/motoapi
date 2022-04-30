@@ -43,7 +43,7 @@ def import_data():
             db.session.add(Variation(
                 name=moto[1].split(' (')[0].strip(),
                 brand=brand,
-                model_year=moto[1].split(' (')[1][0:4],
+                model_year=int(moto[1].split(' (')[1][0:4]),
                 year=moto[3],
                 fuel=moto[4],
                 price=moto[5],
@@ -56,8 +56,10 @@ def import_data():
 @manager.command
 def update_data(validated=False):
     for moto in Variation.query.filter_by(fetch_date=None).all():
+        print('Processing %s' % moto.name)
         moto.update_data()
         db.session.commit()
+        print('End Processing %s' % moto.name)
     if validated:
         for moto in Variation.query.filter(Variation.fetch_date != None).all():
             moto.update_data()

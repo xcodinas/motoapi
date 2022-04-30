@@ -12,6 +12,7 @@ from flask_sqlalchemy import BaseQuery
 from sqlalchemy.sql import func
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declared_attr
+from re import sub
 
 
 from motoapi import db
@@ -22,6 +23,13 @@ def encode_string(_string):
     if isinstance(_string, str):
         _string = _string.encode("utf-8")
     return _string
+
+
+def snake_case(s):
+    return '_'.join(
+        sub('([A-Z][a-z]+)', r' \1',
+        sub('([A-Z]+)', r' \1',
+        s.replace('-', ' '))).split()).lower()
 
 
 def get_hmac(password):
@@ -94,16 +102,9 @@ class Variation(db.Model, TimestampsMixin):
     name = db.Column(db.String)
     year = db.Column(db.Integer)
     model_year = db.Column(db.Integer)
-    cubic = db.Column(db.String)
-    engine = db.Column(db.String)
-    fuel = db.Column(db.String)
     image = db.Column(db.String)
-    max_speed = db.Column(db.String)
-    power = db.Column(db.String)
-    weight = db.Column(db.String)
     price = db.Column(db.Float)
-    refiregeration = db.Column(db.String)
-    valves = db.Column(db.String)
+    extra_data = db.Column(db.JSON)
 
     fetch_state = db.Column(db.String)
     fetch_date = db.Column(db.DateTime)
@@ -111,34 +112,63 @@ class Variation(db.Model, TimestampsMixin):
     brand_id = db.Column(db.Integer, db.ForeignKey('brand.id'),
         nullable=False)
 
-    def get_url(self):
-        return ('https://fichasmotor.com/%s/%s-%s-%s' % (
+    def get_url(self, year=None, use_year=False):
+        if year:
+            return ('https://bikez.com/motorcycles/%s_%s_%s.php' % (
+                self.brand.name,
+                "_".join(self.name.split(' ')).lower(),
+                str(year),
+            )).lower()
+        elif use_year:
+            return ('https://bikez.com/motorcycles/%s_%s_%s.php' % (
+                self.brand.name,
+                "_".join(self.name.split(' ')).lower(),
+                self.year,
+            )).lower()
+        return ('https://bikez.com/models/%s_%s.php' % (
             self.brand.name,
-            self.brand.name,
-            "-".join(self.name.split(' ')),
-            self.model_year)).lower()
+            "_".join(self.name.split(' ')))).lower()
 
     def update_data(self):
-        page = requests.get(self.get_url())
-        soup = BeautifulSoup(page.content, 'html.parser')
         try:
-            self.image = soup.find("div", {"class": "p10"}).find('img')['src']
-            data = soup.findAll("div", {
-                "class": "table-responsive"})[1].findAll('td')
-            self.cubic = data[1].get_text()
-            self.engine = data[3].get_text()
-            self.power = data[5].get_text()
-            self.valves = data[11].get_text()
-            if len(data) >= 15:
-                self.refrigeration = data[15].get_text()
-                self.transmition = data[17].get_text()
-            self.weight = soup.findAll("div", {
-                "class": "table-responsive"})[2].findAll('td')[1].get_text()
-            self.max_speed = soup.findAll("div", {
-                "class": "table-responsive"})[3].findAll('td')[1].get_text()
+            page = requests.get(self.get_url())
+            soup = BeautifulSoup(page.content, 'html.parser')
+            models = [
+                i.find('img')['alt'] for i in soup.findAll('td')[-12].findAll(
+                    'td')]
+            years = [int(m.split(' ')[0]) if m.split(' ')[0].isnumeric()
+                     else 0 for m in models]
+            url = self.get_url(use_year=True)
+            if years and self.model_year:
+                closer_year = min(years, key=lambda x: abs(x - int(
+                    self.model_year)))
+                url = self.get_url(closer_year)
+            moto_page = requests.get(url)
+            moto_soup = BeautifulSoup(moto_page.content, 'html.parser')
+            caracteristics = moto_soup.findAll("table", {
+                "class": "Grid"})[0].findAll('td')
+            self.extra_data = {}
+            ignored_data = [
+                'rating',
+                'update_specs',
+                'insurance_costs',
+                'finance_options',
+                'parts_finder',
+                'maintenance',
+                'ask_questions',
+                'related_bikes'
+            ]
+            self.extra_data['rating'] = caracteristics[7].getText()[0:2]
+            self.image = moto_soup.findAll("table")[1].find('a').find(
+                'img')['src']
+            for i, car in enumerate(caracteristics):
+                key = snake_case(car.getText())
+                if (i % 2 == 0 and (i + 1) < len(caracteristics)
+                        and key not in ignored_data):
+                    self.extra_data[key] = caracteristics[i + 1].getText()
             self.fetch_date = datetime.datetime.now()
             self.fetch_state = "success"
-        except (AttributeError, IndexError) as e:
+        except (Exception) as e:
             self.fetch_state = "error"
 
 
