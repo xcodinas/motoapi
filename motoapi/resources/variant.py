@@ -144,7 +144,7 @@ class AttributeHandler:
             distance_d[i] = bike_id, distance
 
         distance_d.sort(key=lambda x: x[1], reverse=True)
-        return distance_d[limit:]
+        return distance_d[:limit]
 
 
 class Recommendation(Resource):
