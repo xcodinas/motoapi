@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="46" height="46" viewBox="0 0 46 46">
+  <defs>
+    <radialGradient id="radial-gradient" cx="-0.178" cy="0.12" r="1.908" gradientTransform="translate(0.037 0.108) rotate(30.813)" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#21bcff"/>
+      <stop offset="1" stop-color="#9727ff"/>
+    </radialGradient>
+  </defs>
+  <g id="plan-card-nav" transform="translate(-979 -391)">
+    <circle id="Ellipse_3" data-name="Ellipse 3" cx="23" cy="23" r="23" transform="translate(979 391)" fill="url(#radial-gradient)"/>
+    <g id="cursor" transform="translate(991.829 403.83)">
+      <g id="Group_10" data-name="Group 10" transform="translate(-1 2)">
+        <path id="Path_5" data-name="Path 5" d="M19.8.076a.721.721,0,0,0-.646,0h0L.4,9.454a.721.721,0,0,0,.193,1.355l7.444,1.354L9.39,19.606a.721.721,0,0,0,.607.585.7.7,0,0,0,.1.007.721.721,0,0,0,.646-.4L20.123,1.044A.721.721,0,0,0,19.8.076Z" transform="translate(-0.001 0)" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+</svg>

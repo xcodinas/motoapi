@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30.017" height="30" viewBox="0 0 30.017 30">
+  <g id="people" transform="translate(-787.992 -503.016)">
+    <g id="Group_32" data-name="Group 32" transform="translate(662.862 332.878)">
+      <circle id="Ellipse_52" data-name="Ellipse 52" cx="6.395" cy="6.395" r="6.395" transform="translate(133.743 173.724)" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+      <path id="Path_57" data-name="Path 57" d="M147.7,196.551a2.02,2.02,0,0,0,1.975-2.5,9.863,9.863,0,0,0-19.079,0,2.021,2.021,0,0,0,1.975,2.5Z" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+      <path id="Path_58" data-name="Path 58" d="M144.836,175.785a3.785,3.785,0,1,1,1.558,5.658" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+      <path id="Path_59" data-name="Path 59" d="M145.292,188.145h7.526a1.307,1.307,0,0,0,1.278-1.618,6.389,6.389,0,0,0-7.841-4.543" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+      <path id="Path_60" data-name="Path 60" d="M135.44,175.785a3.785,3.785,0,1,0-1.559,5.658" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+      <path id="Path_61" data-name="Path 61" d="M134.983,188.145h-7.525a1.308,1.308,0,0,1-1.279-1.618,6.39,6.39,0,0,1,7.842-4.543" fill="none" stroke="#8c98ba" stroke-miterlimit="10" stroke-width="2"/>
+    </g>
+    <rect id="Rectangle_32" data-name="Rectangle 32" width="30" height="30" transform="translate(788 503.016)" fill="none"/>
+  </g>
+</svg>
