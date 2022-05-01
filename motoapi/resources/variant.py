@@ -83,22 +83,14 @@ recommendation_parser.add_argument('category', type=integer())
 
 class AttributeHandler:
     CATEGORIES = [
-        "Unspecified category",
-        "Allround",
-        "Super motard",
-        "Minibike, cross",
-        "Cross / motocross",
-        "Enduro / offroad",
-        "Trial",
-        "Touring",
-        "Classic",
-        "Custom / cruiser",
-        "Scooter",
-        "Naked bike",
-        "Sport",
-        "Sport touring",
-        "Speedway",
-        "Prototype / concept model"
+        'Unspecified category',
+        'Classic',
+        'Custom / cruiser',
+        'Touring',
+        'Allround',
+        'Naked bike',
+        'Sport',
+        'Sport touring',
     ]
 
     def __init__(self, list_attributes, preference):
@@ -128,11 +120,11 @@ class AttributeHandler:
             CAT_IN = AttributeHandler.CATEGORIES
             try:
                 value = int(value)
-                assert 0 <= value
-                assert value < len(CAT_IN)
-                return attr, value
             except:
                 return attr, CAT_IN.index(value)
+            assert 0 <= value
+            assert value < len(CAT_IN)
+            return attr, value
         raise ValueError('Empty')
 
     def get_average_bikes(self):
@@ -304,7 +296,7 @@ class DashBoard(Resource):
         most_disliked = Variation.query.filter_by(id=most_disliked).first()
         most_disliked = variant_fields(most_disliked)
         most_disliked['dislikes'] = most_dislikes
-
+        all_cats = set()
         def fill(d, ClsV):
             for cat in AttributeHandler.CATEGORIES:
                 d[cat] = 0
@@ -316,13 +308,15 @@ class DashBoard(Resource):
                 ).all()
                 for variation, liked_variation in st:
                     if variation.extra_data is not None and 'category' in variation.extra_data:
+                        print('z')
+                        all_cats.add(variation.extra_data['category'])
                         if variation.extra_data['category'] == cat:
                             d[cat] += 1
-
         like_cat = {}
         fill(like_cat, LikedVariant)
         dislike_cat = {}
         fill(dislike_cat, DislikedVariant)
+        print(all_cats)
         
         response = {
             'num_likes': len(LikedVariant.query.all()),
