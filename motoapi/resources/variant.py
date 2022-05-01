@@ -47,17 +47,22 @@ def tinder_recommendation():
     
     LIMIT = 5
     if not ids_liked:
-        variations = Variation.query.order_by(func.random()).limit(5)
-        return [variant_fields(v) for v in variations]
-    preferences = get_average_preferences(ids_liked)
-    response = recommendation_response(preferences)
+        variations = Variation.query.order_by(func.random()).limit(50)
+        response = [variant_fields(v) for v in variations]
+    else:
+        preferences = get_average_preferences(ids_liked)
+        response = recommendation_response(preferences)
     filtered_response = []
     for item in response:
         id = item['id']
-        if not (id in ids_liked) and not (id in id_disliked):
-            filtered_response.append(item)
-    
-    return filtered_response[:LIMIT]
+        if (id in ids_liked) or (id in id_disliked):
+            continue
+        filtered_response.append(item)
+    # print('aaaa')
+    # print(filtered_response)
+    filtered_response = filtered_response[:LIMIT]
+    # print(list(map(lambda x: x['id'], filtered_response)), ids_liked, id_disliked)
+    return filtered_response
 
 
 
