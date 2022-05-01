@@ -41,6 +41,10 @@ def tinder_recommendation():
     ids_liked = set()
     for like in LikedVariant.query.filter_by(user_id=current_user().id):
         ids_liked.add(like.variant_id)
+    id_disliked = set()
+    for like in DislikedVariant.query.filter_by(user_id=current_user().id):
+        id_disliked.add(like.variant_id)
+    
     LIMIT = 5
     if not ids_liked:
         variations = Variation.query.order_by(func.random()).limit(5)
@@ -49,8 +53,10 @@ def tinder_recommendation():
     response = recommendation_response(preferences)
     filtered_response = []
     for item in response:
-        if not item.id in ids_liked:
+        id = item['id']
+        if not (id in ids_liked) and not (id in id_disliked):
             filtered_response.append(item)
+    
     return filtered_response[:LIMIT]
 
 
@@ -171,7 +177,11 @@ class AttributeHandler:
                 mn = self.min_attributes[attr]
 
                 def clap(value):
-                    return (value - mn) / (mx - mn)
+                    num = (value - mn)
+                    div = (mx - mn)
+                    if div != 0:
+                        num /= div
+                    return num
                 clap_bike = clap(bike[attr])
                 clap_preference = clap(self.preference[attr])
                 difference = abs(clap_bike - clap_preference)

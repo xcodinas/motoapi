@@ -25,3 +25,5 @@ class Config(object):
 
     PASSWORD_HASH = os.environ.get('PASSWORD_HASH') or 'sha512_crypt'
     PASSWORD_SALT = os.environ.get('PASSWORD_SALT') or SECURITY_PASSWORD_SALT
+
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=3)
