@@ -33,7 +33,7 @@ class VariantResource(Resource):
 
 def get_average_preferences(ids_liked):
     handler = AttributeHandler(None, None)
-    fill_handler(handler, variations=Variation.query.filter(
+    fill_handler_avg_perf(handler, variations=Variation.query.filter(
         Variation.id.in_(ids_liked)).all())
     return handler.get_average_bikes()
 
@@ -47,19 +47,21 @@ def tinder_recommendation():
     
     LIMIT = 5
     if not ids_liked:
-        variations = Variation.query.filter_by(fetch_state="success").order_by(func.random()).limit(50)
+        variations = Variation.query.filter_by(fetch_state="success").order_by(func.random()).limit(150)
         response = [variant_fields(v) for v in variations]
+        # print('bbb')
     else:
         preferences = get_average_preferences(ids_liked)
-        response = recommendation_response(preferences)
+        # print('ccc', len(preferences))
+        response = recommendation_response(preferences, limit=None)
     filtered_response = []
     for item in response:
         id = item['id']
         if (id in ids_liked) or (id in id_disliked):
             continue
         filtered_response.append(item)
-    # print('aaaa')
-    # print(filtered_response)
+    # print('aaaa', len(filtered_response))
+    # print(filtered_response, response)
     filtered_response = filtered_response[:LIMIT]
     # print(list(map(lambda x: x['id'], filtered_response)), ids_liked, id_disliked)
     return filtered_response
@@ -68,7 +70,7 @@ def tinder_recommendation():
 
 
 recommendation_parser = reqparse.RequestParser()
-recommendation_parser.add_argument('year', type=integer())
+# recommendation_parser.add_argument('year', type=integer())
 recommendation_parser.add_argument('model_year', type=integer())
 recommendation_parser.add_argument('displacement', type=integer())
 recommendation_parser.add_argument('top_speed', type=integer())
@@ -206,8 +208,36 @@ class AttributeHandler:
         return distance_d
 
 
+def fill_handler_avg_perf(handler, variations=None):
+    attrs = ['model_year']
+    extra_attr = [
+        'displacement',
+        'top_speed',
+        'power',
+        'fuel_capacity',
+        'weight_incl._oil,_gas,_etc',
+        'valves_per_cylinder',
+        'category'
+    ]
+    if variations is None:
+        variations = Variation.query.filter_by(fetch_state='success')
+    for variation in variations:
+        if not AttributeHandler.check_all_attributes(variation, attrs):
+            continue
+        if (variation.extra_data is None
+                or not AttributeHandler.check_all_index(
+                    variation.extra_data, extra_attr)):
+            continue
+        # print('VARIATION')
+        for attr in attrs:
+            handler.add_attribute(
+                variation.id, attr, getattr(variation, attr))
+        for attr in extra_attr:
+            handler.add_attribute(
+                variation.id, attr, variation.extra_data[attr])
+
 def fill_handler(handler, variations=None):
-    attrs = ['year', 'model_year']
+    attrs = ['model_year']
     extra_attr = [
         'displacement',
         'top_speed',
@@ -233,11 +263,12 @@ def fill_handler(handler, variations=None):
             handler.add_attribute(
                 variation.id, attr, variation.extra_data[attr])
 
-def recommendation_response(preference):
+def recommendation_response(preference, limit=50):
     handler = AttributeHandler(preference.keys(), preference)
     fill_handler(handler)
-    LIMIT = 50
-    recommendations = handler.get_recommendations()[:LIMIT]
+    recommendations = handler.get_recommendations()
+    if limit is not None:
+        recommendations = recommendations[:limit]
     ids = list(map(lambda x: x[0], recommendations))
     recommendations = {k: v for k, v in recommendations}
     recommendations_obj = Variation.query.filter(
