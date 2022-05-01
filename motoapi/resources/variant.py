@@ -192,8 +192,9 @@ class AttributeHandler:
 
         for i in range(len(distance_d)):
             bike_id, distance = distance_d[i]
-            distance = ((distance - min_distance) / (
-                max_distance - min_distance)) * 100
+            div = (max_distance - min_distance)
+            if div == 0: div = 1
+            distance = ((distance - min_distance) / div) * 100
             distance_d[i] = bike_id, distance
 
         distance_d.sort(key=lambda x: x[1], reverse=True)
