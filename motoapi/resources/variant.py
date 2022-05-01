@@ -305,20 +305,26 @@ class DashBoard(Resource):
         most_disliked = variant_fields(most_disliked)
         most_disliked['dislikes'] = most_dislikes
 
-        # d = {}
-        # for cat in AttributeHandler.CATEGORIES:
-        #     d[cat] = db.session().query(
-        #         Variation, 
-        #         LikedVariant, 
-        #     ).filter(
-        #         Variation.id == LikedVariant.variant_id
-        #     ).all()
+        d = {}
+        for cat in AttributeHandler.CATEGORIES:
+            d[cat] = 0
+            st = db.session().query(
+                Variation, 
+                LikedVariant, 
+            ).filter(
+                Variation.id == LikedVariant.variant_id
+            ).all()
+            for variation, liked_variation in st:
+                if variation.extra_data is not None and 'category' in variation.extra_data:
+                    if variation.extra_data['category'] == cat:
+                        d[cat] += 1
 
 
         response = {
             'num_likes': len(LikedVariant.query.all()),
             'num_dislikes': len(DislikedVariant.query.all()),
             'most_liked': most_liked,
-            'most_disliked': most_disliked
+            'most_disliked': most_disliked,
+            'like_categories': d
         }
         return response
