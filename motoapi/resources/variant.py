@@ -82,6 +82,25 @@ recommendation_parser.add_argument('category', type=integer())
 
 
 class AttributeHandler:
+    CATEGORIES = [
+        "Unspecified category",
+        "Allround",
+        "Super motard",
+        "Minibike, cross",
+        "Cross / motocross",
+        "Enduro / offroad",
+        "Trial",
+        "Touring",
+        "Classic",
+        "Custom / cruiser",
+        "Scooter",
+        "Naked bike",
+        "Sport",
+        "Sport touring",
+        "Speedway",
+        "Prototype / concept model"
+    ]
+
     def __init__(self, list_attributes, preference):
         self.list_attributes = list_attributes
         self.min_attributes = {}
@@ -106,24 +125,7 @@ class AttributeHandler:
             value = float(re.search('(\d+\.\d+)\s*kW', value).group(1))
             return attr, value
         if 'category' == attr:
-            CAT_IN = [
-                "Unspecified category",
-                "Allround",
-                "Super motard",
-                "Minibike, cross",
-                "Cross / motocross",
-                "Enduro / offroad",
-                "Trial",
-                "Touring",
-                "Classic",
-                "Custom / cruiser",
-                "Scooter",
-                "Naked bike",
-                "Sport",
-                "Sport touring",
-                "Speedway",
-                "Prototype / concept model"
-            ]
+            CAT_IN = AttributeHandler.CATEGORIES
             try:
                 value = int(value)
                 assert 0 <= value
@@ -282,3 +284,41 @@ class TinderSwinger(Resource):
                 variant=variant, user=current_user()))
         db.session.commit()
         return tinder_recommendation()
+
+class DashBoard(Resource):
+
+    # decorators = [jwt_required]
+
+    def get(self):
+        from sqlalchemy import func
+        most_liked = LikedVariant.query.with_entities(LikedVariant.variant_id, func.count(LikedVariant.variant_id)).group_by(LikedVariant.variant_id).all()
+        most_liked.sort(key=lambda x: x[1])
+        most_liked, most_likes = most_liked[0]
+        most_liked = Variation.query.filter_by(id=most_liked).first()
+        most_liked = variant_fields(most_liked)
+        most_liked['likes'] = most_likes
+
+        most_disliked = DislikedVariant.query.with_entities(DislikedVariant.variant_id, func.count(DislikedVariant.variant_id)).group_by(DislikedVariant.variant_id).all()
+        most_disliked.sort(key=lambda x: x[1])
+        most_disliked, most_dislikes = most_disliked[0]
+        most_disliked = Variation.query.filter_by(id=most_disliked).first()
+        most_disliked = variant_fields(most_disliked)
+        most_disliked['dislikes'] = most_dislikes
+
+        # d = {}
+        # for cat in AttributeHandler.CATEGORIES:
+        #     d[cat] = db.session().query(
+        #         Variation, 
+        #         LikedVariant, 
+        #     ).filter(
+        #         Variation.id == LikedVariant.variant_id
+        #     ).all()
+
+
+        response = {
+            'num_likes': len(LikedVariant.query.all()),
+            'num_dislikes': len(DislikedVariant.query.all()),
+            'most_liked': most_liked,
+            'most_disliked': most_disliked
+        }
+        return response

@@ -61,6 +61,7 @@ from motoapi.resources.user import (
     MeResource,
     )
 from motoapi.resources.variant import (
+    DashBoard,
     Recommendation,
     VariantResource,
     TinderSwinger,
@@ -74,6 +75,7 @@ api.add_resource(MeResource, '/api/user/me')
 api.add_resource(VariantResource, '/api/variant')
 api.add_resource(Recommendation, '/api/variant/recommendation')
 api.add_resource(TinderSwinger, '/api/variant/swinger')
+api.add_resource(DashBoard, '/api/variant/dash')
 
 from motoapi import models, routes, exceptions, utils
 assert utils
