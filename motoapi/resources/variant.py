@@ -33,7 +33,7 @@ class VariantResource(Resource):
 
 def get_average_preferences(ids_liked):
     handler = AttributeHandler(None, None)
-    fill_handler_avg_perf(handler, variations=Variation.query.filter(
+    fill_handler(handler, variations=Variation.query.filter(
         Variation.id.in_(ids_liked)).all())
     return handler.get_average_bikes()
 
@@ -207,34 +207,6 @@ class AttributeHandler:
         distance_d.sort(key=lambda x: x[1], reverse=True)
         return distance_d
 
-
-def fill_handler_avg_perf(handler, variations=None):
-    attrs = ['model_year']
-    extra_attr = [
-        'displacement',
-        'top_speed',
-        'power',
-        'fuel_capacity',
-        'weight_incl._oil,_gas,_etc',
-        'valves_per_cylinder',
-        'category'
-    ]
-    if variations is None:
-        variations = Variation.query.filter_by(fetch_state='success')
-    for variation in variations:
-        if not AttributeHandler.check_all_attributes(variation, attrs):
-            continue
-        if (variation.extra_data is None
-                or not AttributeHandler.check_all_index(
-                    variation.extra_data, extra_attr)):
-            continue
-        # print('VARIATION')
-        for attr in attrs:
-            handler.add_attribute(
-                variation.id, attr, getattr(variation, attr))
-        for attr in extra_attr:
-            handler.add_attribute(
-                variation.id, attr, variation.extra_data[attr])
 
 def fill_handler(handler, variations=None):
     attrs = ['model_year']
