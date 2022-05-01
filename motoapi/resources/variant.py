@@ -47,7 +47,7 @@ def tinder_recommendation():
     
     LIMIT = 5
     if not ids_liked:
-        variations = Variation.query.order_by(func.random()).limit(50)
+        variations = Variation.query.filter_by(fetch_state="success").order_by(func.random()).limit(50)
         response = [variant_fields(v) for v in variations]
     else:
         preferences = get_average_preferences(ids_liked)
@@ -218,7 +218,7 @@ def fill_handler(handler, variations=None):
         'category'
     ]
     if variations is None:
-        variations = Variation.query.all()
+        variations = Variation.query.filter_by(fetch_state='success')
     for variation in variations:
         if not AttributeHandler.check_all_attributes(variation, attrs):
             continue
